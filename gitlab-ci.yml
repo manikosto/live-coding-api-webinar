@@ -1,0 +1,43 @@
+stages:
+    - tests
+    - report
+
+variables:
+    STAGE: prod
+
+services:
+    - docker:24.0.5-dind
+
+run_tests:
+    stage: tests
+    image: docker:24.0.5
+    # Раскомметировать before_script после первого тестового прогона
+#    before_script:
+#      - apk add curl jq
+#      - ARTIFACTS_CHECK_URL="https://$CI_SERVER_HOST/api/v4/projects/$CI_PROJECT_ID/jobs/artifacts/$CI_DEFAULT_BRANCH/download?job=pages&private_token=$PRIVATE_TOKEN"
+#      - curl -k --location --output artifacts.zip $ARTIFACTS_CHECK_URL
+#      - unzip artifacts.zip
+#      - chmod -R 777 public
+#      - mkdir -p allure-results && cp -r public/history allure-results
+    script:
+        - docker compose up api-tests || true
+    after_script:
+        - docker compose up report
+    artifacts:
+        paths:
+            - allure-report
+        when: on_success
+        expire_in: 10 days
+
+pages:
+  stage: report
+  needs:
+    - run_tests
+  script:
+    - mkdir public
+    - cp -r allure-report/* public
+  artifacts:
+    when: on_success
+    expire_in: never
+    paths:
+      - public

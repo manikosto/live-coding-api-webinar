@@ -1,0 +1,26 @@
+version: "3.7"
+
+services:
+  api-tests:
+    image: api-tests:v1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/usr/workspace
+    command: /bin/sh -c "STAGE=$$STAGE pytest -sv --alluredir=allure-results"
+    working_dir: /usr/workspace
+    environment:
+      STAGE: prod
+      SUITE: users
+      API_TOKEN: ${API_TOKEN}
+
+  report:
+    image: api-tests:v1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/usr/workspace
+    command: /bin/sh -c "allure generate allure-results --clean -o allure-report"
+    working_dir: /usr/workspace
